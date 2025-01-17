@@ -22,10 +22,10 @@ def is_straight(ranks: list[str]) -> bool:
     indices = sorted(RANK_ORDER.index(rank) for rank in ranks)
     return indices == list(range(indices[0], indices[0] + 5)) or indices == [0, 1, 2, 3, 12]
 
-def hand_rank(cards: list) -> tuple[int, list]:
+def hand_rank(cards: list[Card]) -> tuple[int, list]:
     """Determines the rank of a poker hand."""
-    suits: list[str] = [card[1] for card in cards]
-    ranks: list[str] = [card[0] for card in cards]
+    suits: list[str] = [card._suit for card in cards]
+    ranks: list[str] = [card._rank for card in cards]
     rank_values: list[str] = [RANK_ORDER.index(rank) for rank in ranks]
 
     # Sort ranks by frequency and value
@@ -59,34 +59,44 @@ def hand_rank(cards: list) -> tuple[int, list]:
     else:
         return (0, rank_values)  # High Card
 
-def best_hand(player_hands: dict[str, list[str]], community_cards: list[tuple[str, str, list[Card]]]):
+def best_hand(player_hands: dict[str, list[Card]], community_cards: list[Card]) -> tuple[list[str], list[str], list[str]]:
     """Determines the best hand among players."""
-    best_player = None
+    best_players = []
+    bestest_combinations = []
     best_rank = (-1, [])
 
     for player, hand in player_hands.items():
-        combined_cards = hand + community_cards
+        combined_cards: list[Card] = hand + community_cards
         best_combination = max((comb for comb in combinations(combined_cards, 5)), key=hand_rank)
         print(best_combination)
         current_rank = hand_rank(best_combination)
 
         if current_rank > best_rank:
             best_rank = current_rank
-            best_player = player
-            bestest_combination = best_combination
+            best_players = [player]
+            bestest_combinations = [best_combination]
+        elif current_rank == best_rank:
+            best_players.append(player)
+            bestest_combinations.append(best_combination)
 
-    return best_player, best_rank, bestest_combination
+    return best_players, best_rank, bestest_combinations
 
-# Example Usage
+def print_draw(players: list[str]) -> str:
+    if len(players) == 2:
+        return f"{players[0]} and {players[1]}"
+    return ", ".join(players[:-1]) + f", and {players[-1]}"
+
+# Example
 if __name__ == "__main__":
-    community_cards = [Card("T", H), Card("A", H), Card("4", H), Card("5", H), Card("2", D)]
+    community_cards = [Card("5", S), Card("A", H), Card("T", H), Card("3", C), Card("A", C)]
     player_hands = {
-        "Player 1": [Card("3", H), Card("K", H)],
-        "Player 2": [Card("7", S), Card("9", D)],
-        "Player 3": [Card("7", C), Card("8", C)],
-        "Player 4": [Card("9", H), Card("A", D)],
+        "Player 1": [Card("3", H), Card("K", D)], 
+        "Player 2": [Card("3", D), Card("Q", D)]
     }
 
-    winner, rank, hand = best_hand(player_hands, community_cards)
-    print(f"The winner is {winner} with a {HAND_RANKS[rank[0]]}")
-    print(f"Hand: {hand}")
+    winners, rank, hands = best_hand(player_hands, community_cards)
+    if len(winners) == 1:
+        print(f"The winner is {winners[0]} with a {HAND_RANKS[rank[0]]}: {hands[0]}")
+    else:
+        print(f"There was a draw between {print_draw(winners)} with a {HAND_RANKS[rank[0]]}")
+    
